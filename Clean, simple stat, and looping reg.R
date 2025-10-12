@@ -201,6 +201,7 @@ destat_small <- destat2020 %>%
     gdp_de = first(gdp_de),
     .groups = "drop"
   )
+destat_small$lksg <- ifelse(destat_small$period %in% c(2023, 2024), 1, 0)
 
 
 
