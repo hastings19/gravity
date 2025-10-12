@@ -115,7 +115,7 @@ high_impact_codes <- c(
   "WA19", "WA20", "WA21", "WA22", "WA23", "WA24", "WA44",
   
   # Extraction of mineral resources
-  "WA25", "WA26", "WA27", "WA72", "WA73", "WA74", "WA75", "WA76",
+  "WA25", "WA26", "WA27", "WA71", "WA72", "WA73", "WA74", "WA75", "WA76",
   "WA78", "WA79", "WA80", "WA81",
   
   # Manufacture of mineral and metal products
