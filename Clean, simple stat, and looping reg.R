@@ -9,13 +9,14 @@ library(ggplot2)
 library(ggrepel)
 library(fixest)
 library(broom)
+library(haven)
 
 # wd
 setwd("~/Documents/OneDrive/Documents/MSc Econ/Sem 5 SS/MASTER THESIS/destat data")
 destat <- read_excel("destat.xlsx")
 
 
-#### CLEAN
+############################# CLEAN #########################################
 destat <- rename (destat, partner = Column1)
 
 destat <- destat %>% fill(partner, .direction = "down")
@@ -106,24 +107,19 @@ destat <- destat %>%
 
 high_impact_codes <- c(
   # Textiles, leather, footwear
-  "WA41", "WA42", "WA43", "WA50", "WA51", "WA52", "WA53", "WA54",
-  "WA55", "WA56", "WA57", "WA58", "WA59", "WA60", "WA61", "WA62", "WA63", "WA64",
+  "WA41", "WA42", "WA43", "WA50", "WA51", "WA52", "WA53", "WA54", "WA55", "WA56", "WA57", "WA58", "WA59", "WA60", "WA61", "WA62", "WA63", "WA64",
   
   # Agriculture, forestry, fisheries, food, beverages
-  "WA01", "WA02", "WA03", "WA04", "WA05", "WA06", "WA07", "WA08", "WA09",
-  "WA10", "WA11", "WA12", "WA13", "WA14", "WA15", "WA16", "WA17", "WA18",
-  "WA19", "WA20", "WA21", "WA22", "WA23", "WA24", "WA44",
+  "WA01", "WA02", "WA03", "WA04", "WA05", "WA06", "WA07", "WA08", "WA09", "WA10", "WA11", "WA12", "WA13", "WA14", "WA15", "WA16", "WA17", "WA18", "WA19", "WA20", "WA21", "WA22", "WA23", "WA24", "WA44",
   
   # Extraction of mineral resources
-  "WA25", "WA26", "WA27", "WA71", "WA72", "WA73", "WA74", "WA75", "WA76",
-  "WA78", "WA79", "WA80", "WA81",
+  "WA25", "WA26", "WA27", "WA71", "WA72", "WA73", "WA74", "WA75", "WA76", "WA78", "WA79", "WA80", "WA81",
   
   # Manufacture of mineral and metal products
   "WA68", "WA69", "WA70", "WA82", "WA83",
   
   # Intermediate products, fuels, chemicals
-  "WA28", "WA29", "WA30", "WA31", "WA32", "WA33", "WA34",
-  "WA39", "WA40"
+  "WA28", "WA29", "WA30", "WA31", "WA32", "WA33", "WA34", "WA39", "WA40"
 )
 
 destat$high_impact <- ifelse(destat$`product code eu` %in% high_impact_codes, 1, 0)
@@ -146,6 +142,7 @@ destat <- left_join(destat, wi_clean %>% select(partner_iso3, period, level),
 
 destat$lksg1 <- ifelse(destat$period == 2023, 1, 0)
 destat$lksg2 <- ifelse(destat$period == 2024, 1, 0)
+destat$lksg <- ifelse(destat$period %in% c(2023, 2024), 1, 0)
 
 
 ##### LDC STATUS
@@ -183,60 +180,15 @@ gdp_values <- data.frame(
 )
 destat <- destat %>%
   left_join(gdp_values, by = "period")
+###################################################################
+write.csv(destat, "~/Documents/OneDrive/Documents/MSc Econ/Sem 5 SS/MASTER THESIS/destat data/destat2020.csv", row.names = FALSE)
+rm(list = ls())
+cat("\014")
 
-##### SIMPLE STATS
-
-# Total Imports Value, by LDC
-line_data <- destat %>%
-  group_by(period, ldc_dummy) %>%
-  summarise(total_imports = sum(importsvalue, na.rm = TRUE), .groups = "drop")
-
-ggplot(line_data, aes(x = period, y = total_imports, color = factor(ldc_dummy))) +
-  geom_line(size = 1.2) +
-  labs(title = "Total Imports Over Time by LDC Status",
-       x = "Period",
-       y = "Total Imports Value",
-       color = "LDC Status") +
-  theme_minimal()
-
-# ldc import log difference 
-base_period <- min(line_data$period)
-line_data <- line_data %>%
-  group_by(ldc_dummy) %>%
-  mutate(log_imports = log(total_imports),
-         log_diff = log_imports - log_imports[period == base_period])
-
-ggplot(line_data, aes(x = period, y = log_diff, color = factor(ldc_dummy))) +
-  geom_line(size = 1.2) +
-  labs(title = "Log-Difference of Imports Over Time (Relative to Base Period)",
-       x = "Period", y = "Log-Difference (relative to base period)",
-       color = "LDC Status") +
-  theme_minimal()
-
-
-# high impact
-ggplot(line_data, aes(x = period, y = total_imports, color = factor(high_impact))) +
-  geom_line(size = 1.2) +
-  labs(title = "Total Imports Over Time (LDCs Only), by High-Impact Status",
-       x = "Period",
-       y = "Total Imports Value",
-       color = "High Impact") +
-  theme_minimal()
-
-
-# import value ordering
-ldc_weight <- destat %>%
-  filter(ldc_dummy == 1) %>%
-  group_by(product_category) %>%
-  summarise(importsvalue = sum(importsvalue, na.rm = TRUE)) %>%
-  mutate(
-    above_4m = as.integer(importsvalue >= 4e6),
-    above_40m = as.integer(importsvalue >= 4e7)
-  ) %>%
-  arrange(desc(importsvalue))
+destat2020 <- read_dta("~/Documents/OneDrive/Documents/MSc Econ/Sem 5 SS/Master thesis/destat data/destat2020.dta")
 
 ####### COUNTRY LEVEL SUBDATASET 
-destat_small <- destat %>%
+destat_small <- destat2020 %>%
   group_by(period, partner_iso3) %>%
   summarise(
     importsvalue = sum(importsvalue, na.rm = TRUE),
@@ -251,43 +203,139 @@ destat_small <- destat %>%
   )
 
 
-####### LOOPING REGRESSION
 
-destat <- destat %>%
-  mutate(
-    product_category = as.factor(product_category),
-    partner__iso3 = as.factor(partner__iso3)
-  )
-results_list <- list()
-for (cat in unique(destat$product_category)) {
-  data_subset <- destat %>% filter(product_category == cat)
-    if (nrow(data_subset) > 50) { #Central limit theorem
-    try({
-      model <- feglm(
-        importsvalue ~ gdp_de + gdp + lksg1 + lksg2 + ldc_lksg1 + ldc_lksg2 + ldc_dummy | partner__iso3,
-        data = data_subset,
-        family = poisson()
-      )
-      
-      tidy_res <- tidy(model) %>%
-        mutate(
-          product_category = cat,
-          stars = case_when(
-            p.value < 0.001 ~ "***",
-            p.value < 0.01 ~ "**",
-            p.value < 0.05 ~ "*",
-            p.value < 0.1 ~ ".",
-            TRUE ~ ""
-          ),
-          estimate = paste0(round(estimate, 4), stars)
-        ) %>%
-        select(product_category, term, estimate)
-      
-      results_list[[as.character(cat)]] <- tidy_res
-    }, silent = TRUE)
-  }
-}
-final_table <- bind_rows(results_list)
 
-# print(final_table)
+
+
+############## SIMPLE STATS #########################################
+
+##### FIGURE 1
+
+itpde <- read_csv("Downloads/ITPDE_R03.csv")
+
+itpde22 <- itpde %>% 
+  filter(year >= 2016 & year <= 2022)
+iso_keep <- c(
+  "AUT","BEL","BGR","HRV","CYP","CZE","DNK","EST","FIN","FRA","DEU",
+  "GRC","HUN","IRL","ITA","LVA","LTU","LUX","MLT","NLD","POL","PRT",
+  "ROU","SVK","SVN","ESP","SWE","USA","CHN")
+itpde22a <- itpde22 %>%
+  filter(importer_iso3 %in% iso_keep)
+write_csv(itpde22a, "Desktop/itpde22a.csv")
+itpde22a <- read_csv("Desktop/itpde22a.csv")
+itpde22ab <- itpde22a %>%
+  group_by(importer_iso3, year) %>%
+  summarise(trade = sum(trade, na.rm = TRUE), .groups = "drop")
+eu_iso <- c(
+  "AUT","BEL","BGR","HRV","CYP","CZE","DNK","EST","FIN","FRA","DEU",
+  "GRC","HUN","IRL","ITA","LVA","LTU","LUX","MLT","NLD","POL","PRT",
+  "ROU","SVK","SVN","ESP","SWE")
+itpde22abc <- itpde22ab %>%
+  mutate(importer_iso3 = if_else(importer_iso3 %in% eu_iso, "EUE", importer_iso3)) %>%
+  filter(importer_iso3 %in% c("EUE", "USA", "CHN")) %>%
+  group_by(importer_iso3, year) %>%
+  summarise(trade = sum(trade, na.rm = TRUE), .groups = "drop")
+itpde22abc <- itpde22abc %>% 
+  filter(year >= 2016 & year <= 2021)
+ggplot(itpde22abc, aes(x = year, y = trade / 1e7, color = importer_iso3, group = importer_iso3)) +
+  geom_line(size = 1.2) +
+  scale_y_continuous(labels = scales::comma, limits = c(0, NA)) +
+  labs(
+    title = "Import Value 2016 - 2021",
+    x = "Year",
+    y = "import value in trillions",
+    color = "Importer"
+  ) +
+  theme_minimal(base_size = 14)
+
+
+
+
+
+####### FIGURE 3
+destat <- read_dta("Documents/OneDrive/Documents/MSc Econ/Sem 5 SS/MASTER THESIS/destat data/destat2020.dta")
+setwd("~/Documents/OneDrive/Documents/MSc Econ/Sem 5 SS/Master thesis/destat data/Post regression")
+saveRDS(destat, file="destat2020_for_summary.rds")
+destat2020$wri_dummy <- ifelse(destat$level %in% c(5, 6), 1, 0)
+#wri dummy = 0 for countries with good worker rights, = 1 for countries with bad worker rights. 
+
+line_data <- destat2020 %>% 
+  group_by(period, wri_dummy) %>% 
+  summarise (total_imports = sum(importsvalue, na.rm = TRUE), .groups = "drop")
+
+ggplot(line_data, aes(x=period, y=total_imports / 1e11 , color=factor(wri_dummy)))+
+  geom_line(size=1.2)+
+  labs(title = "",
+       x= "period",
+       y= "Imports in hundred billions",
+       color = "WRI")+
+  theme_minimal()+
+  expand_limits(y = 0)
+
+
+### FIGURE 4
+line_data2 <- destat2020 %>% 
+  group_by(period, ldc_dummy) %>% 
+  summarise (total_imports = sum(importsvalue, na.rm = TRUE), .groups = "drop")
+
+base_period <- min(line_data2$period)
+
+line_data2 <- line_data2 %>%
+  group_by(ldc_dummy) %>%
+  mutate(log_imports = log(total_imports),
+         log_diff = log_imports - log_imports[period == base_period])
+
+ggplot(line_data2, aes(x = period, y = log_diff, color = factor(ldc_dummy))) +
+  geom_line(size = 1.2) +
+  labs(title = "Log-Difference of Imports Over Time (Relative to Base Period)",
+       x = "Period", y = "Log-Difference (relative to base period)",
+       color = "LDC Status") +
+  theme_minimal()
+
+
+#### FIGURE 5
+line_data_hig <- destat %>%
+  group_by(period, high_impact) %>%
+  summarise(total_imports = sum(importsvalue, na.rm = TRUE), .groups = "drop") %>%
+  group_by(high_impact) %>%
+  mutate(log_imports = log(total_imports),
+         log_diff = log_imports - log_imports[period == base_period])
+
+ggplot(line_data_hig, aes(x = period, y = log_diff, color = factor (high_impact))) +
+  geom_line(size = 1.2) +
+  labs (title = "",
+        x = "Period",
+        y = "log difference",
+        color = "High Impact") +
+  theme_minimal() +
+  expand_limits(y = 0)
+
+#### FIGURE 6
+
+line_data_hi <- destat %>%
+  filter(ldc_dummy == 1) %>% 
+  group_by(period, high_impact) %>%
+  summarise(total_imports = sum(importsvalue, na.rm = TRUE), .groups = "drop") %>%
+  group_by(high_impact) %>%
+  mutate(log_imports = log(total_imports),
+         log_diff = log_imports - log_imports[period == base_period])
+
+ggplot(line_data_hi, aes(x = period, y = log_diff, color = factor (high_impact))) +
+  geom_line(size = 1.2) +
+  labs (title = "",
+        x = "Period",
+        y = "log difference",
+        color = "High Impact") +
+  theme_minimal() +
+  expand_limits(y = 0)
+
+
+
+
+
+
+
+
+
+
 
