@@ -1,6 +1,15 @@
 ############ R CODE!!!! ############
 
 # lib
+install.packages("readxl")
+install.packages("dplyr")
+install.packages("tidyr")
+install.packages("ggplot2")
+install.packages("ggrepel")
+install.packages("ggrepel")
+install.packages("fixest")
+install.packages("broom")
+install.packages("haven")
 library(readr)
 library(readxl)
 library(dplyr)
@@ -257,7 +266,7 @@ ggplot(itpde22abc, aes(x = year, y = trade / 1e7, color = importer_iso3, group =
 destat <- read_dta("Documents/OneDrive/Documents/MSc Econ/Sem 5 SS/MASTER THESIS/destat data/destat2020.dta")
 setwd("~/Documents/OneDrive/Documents/MSc Econ/Sem 5 SS/Master thesis/destat data/Post regression")
 saveRDS(destat, file="destat2020_for_summary.rds")
-destat2020$wri_dummy <- ifelse(destat$level %in% c(5, 6), 1, 0)
+destat2020$wri_dummy <- ifelse(destat2020$level %in% c(5, 6), 1, 0)
 #wri dummy = 0 for countries with good worker rights, = 1 for countries with bad worker rights. 
 
 line_data <- destat2020 %>% 
@@ -295,7 +304,7 @@ ggplot(line_data2, aes(x = period, y = log_diff, color = factor(ldc_dummy))) +
 
 
 #### FIGURE 5
-line_data_hig <- destat %>%
+line_data_hig <- destat2020 %>%
   group_by(period, high_impact) %>%
   summarise(total_imports = sum(importsvalue, na.rm = TRUE), .groups = "drop") %>%
   group_by(high_impact) %>%
@@ -313,7 +322,7 @@ ggplot(line_data_hig, aes(x = period, y = log_diff, color = factor (high_impact)
 
 #### FIGURE 6
 
-line_data_hi <- destat %>%
+line_data_hi <- destat2020 %>%
   filter(ldc_dummy == 1) %>% 
   group_by(period, high_impact) %>%
   summarise(total_imports = sum(importsvalue, na.rm = TRUE), .groups = "drop") %>%
@@ -329,14 +338,3 @@ ggplot(line_data_hi, aes(x = period, y = log_diff, color = factor (high_impact))
         color = "High Impact") +
   theme_minimal() +
   expand_limits(y = 0)
-
-
-
-
-
-
-
-
-
-
-
