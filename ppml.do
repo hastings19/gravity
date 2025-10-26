@@ -68,8 +68,8 @@ save "C:\Users\hasti\OneDrive\Documents\MSc Econ\Sem 5 SS\Master thesis\destat d
 * Save work
 
 eststo clear
-eststo: ppmlhdfe importsvalue gdp_de gdp i.product__category##i.lksg, absorb(partner_#product__category period) vce(cluster partner_#product__category)
-esttab using "C:\Users\hasti\OneDrive\Desktop\stata\lastmetheq.csv", se star(* 0.10 ** 0.05 *** 0.01) replace
+eststo: 
+esttab using "C:\Users\hasti\OneDrive\Desktop\stata\eq.csv", se star(* 0.10 ** 0.05 *** 0.01) replace
 
 * a little cleaning
 encode product_category, gen(product__category)
